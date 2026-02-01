@@ -8,11 +8,11 @@ pub struct Frame {
     opcode: u8,
     mask: bool,
     payload_length: u8,
-    payload: [u8],
+    payload: Vec<u8>,
 }
 
 impl Frame {
-    pub fn build(data: &[u8]) {
+    pub fn parse(data: &[u8]) {
         println!("First byte: {:08b}", data[0]);
 
         println!("Fin: {:08b}", (data[0] >> 7) & 0x01);
@@ -53,6 +53,42 @@ impl Frame {
         }
 
         println!("Payload: {:#?}", str::from_utf8(&decoded));
+    }
+
+    pub fn new(
+        fin: bool,
+        rsv1: bool,
+        rsv2: bool,
+        rsv3: bool,
+        opcode: u8,
+        mask: bool,
+        payload_length: u8,
+        payload: &[u8],
+    ) -> Frame {
+        Frame {
+            fin,
+            rsv1,
+            rsv2,
+            rsv3,
+            opcode,
+            mask,
+            payload_length,
+            payload: payload.to_vec(),
+        }
+    }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let first_byte = (self.fin as u8) << 7
+            | (self.rsv1 as u8) << 6
+            | (self.rsv2 as u8) << 5
+            | (self.rsv3 as u8) << 4
+            | (self.opcode as u8);
+
+        let second_byte = (self.mask as u8) << 7 | (self.payload_length & 0b01111111);
+
+        let mut bytes = vec![first_byte, second_byte];
+        bytes.extend(&self.payload);
+        bytes
     }
 }
 

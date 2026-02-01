@@ -30,7 +30,7 @@ impl HttpRequest {
 
         let first_line_parts: Vec<&str> = data.first().unwrap().split_whitespace().collect();
         if first_line_parts.len() != 3 {
-            return Err(bail!("Invalid first line"));
+            bail!("Invalid first line");
         }
         let method = first_line_parts[0].to_string();
         let path = first_line_parts[1].to_string();
@@ -52,7 +52,7 @@ impl HttpRequest {
         }
 
         if required_headers_count != REQUIRED_HEADERS.len() {
-            return Err(bail!("Required headers issue"));
+            bail!("Required headers issue");
             // send_bad_request(&mut stream);
             // panic!("Holly shit");
         }
@@ -112,7 +112,25 @@ fn main() {
                 println!("Got {n} bytes");
                 let frame = &buf[..n];
                 println!("{:#x?}", &frame);
-                Frame::build(&frame);
+                Frame::parse(&frame);
+                let payload = "hello bitch!";
+                let resp_frame = Frame::new(
+                    true,
+                    false,
+                    false,
+                    false,
+                    1,
+                    false,
+                    payload.len() as u8,
+                    payload.as_bytes(),
+                );
+                let resp_bytes = resp_frame.as_bytes();
+                println!("{:08b}", resp_bytes[0]);
+                println!("{:08b}", resp_bytes[1]);
+                for byte in resp_bytes.iter().skip(2) {
+                    println!("{:08b}", byte);
+                }
+                stream.write(&resp_bytes).unwrap();
             }
             Err(e) => {
                 eprintln!("Got error: {e}");
