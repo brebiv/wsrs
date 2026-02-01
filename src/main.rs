@@ -113,23 +113,19 @@ fn main() {
                 let frame = &buf[..n];
                 println!("{:#x?}", &frame);
                 Frame::parse(&frame);
-                let payload = "hello bitch!";
+
+                let payload = ['a' as u8; 65536 + 10];
+                // let payload = "hello bitch!";
                 let resp_frame = Frame::new(
-                    true,
-                    false,
-                    false,
-                    false,
-                    1,
-                    false,
-                    payload.len() as u8,
-                    payload.as_bytes(),
+                    true, false, false, false, 1, false, &payload,
+                    // payload.as_bytes(),
                 );
                 let resp_bytes = resp_frame.as_bytes();
-                println!("{:08b}", resp_bytes[0]);
-                println!("{:08b}", resp_bytes[1]);
-                for byte in resp_bytes.iter().skip(2) {
-                    println!("{:08b}", byte);
-                }
+                // println!("{:08b}", resp_bytes[0]);
+                // println!("{:08b}", resp_bytes[1]);
+                // for byte in resp_bytes.iter().skip(2) {
+                //     println!("{:08b}", byte);
+                // }
                 stream.write(&resp_bytes).unwrap();
             }
             Err(e) => {

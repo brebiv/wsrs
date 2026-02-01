@@ -7,7 +7,7 @@ pub struct Frame {
     rsv3: bool,
     opcode: u8,
     mask: bool,
-    payload_length: u8,
+    payload_length: usize,
     payload: Vec<u8>,
 }
 
@@ -35,7 +35,7 @@ impl Frame {
             }
             127 => {
                 mask_key_offset = 6;
-                u32::from_be_bytes(data[2..6].try_into().unwrap()) as usize
+                u64::from_be_bytes(data[2..6].try_into().unwrap()) as usize
             }
             _ => unreachable!("Should never be here"),
         };
@@ -62,9 +62,11 @@ impl Frame {
         rsv3: bool,
         opcode: u8,
         mask: bool,
-        payload_length: u8,
+        // payload_length: u8,
         payload: &[u8],
     ) -> Frame {
+        let payload_length = payload.len();
+
         Frame {
             fin,
             rsv1,
@@ -84,9 +86,21 @@ impl Frame {
             | (self.rsv3 as u8) << 4
             | (self.opcode as u8);
 
-        let second_byte = (self.mask as u8) << 7 | (self.payload_length & 0b01111111);
+        let second_byte = (self.mask as u8) << 7;
+        let second_byte = match self.payload_length {
+            0..=125 => second_byte | (self.payload_length as u8 & 0b01111111),
+            126..=65535 => second_byte | (126 & 0b01111111),
+            65536.. => second_byte | (127 & 0b01111111),
+        };
+
+        let payload_length_part: Vec<u8> = match self.payload_length {
+            0..=125 => Vec::new(),
+            126..=65535 => (self.payload_length as u16).to_be_bytes().to_vec(),
+            65536.. => self.payload_length.to_be_bytes().to_vec(),
+        };
 
         let mut bytes = vec![first_byte, second_byte];
+        bytes.extend(&payload_length_part);
         bytes.extend(&self.payload);
         bytes
     }
