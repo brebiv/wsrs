@@ -67,7 +67,9 @@ impl HttpRequest {
 }
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:8000").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8000").expect("Failed to bind");
+
+    println!("WebSocket server is listening on: {}", "127.0.0.1:8000");
 
     let (mut stream, client_addr) = listener.accept().unwrap();
 
@@ -95,7 +97,8 @@ fn main() {
             hasher.finalize()
         };
         let secret = general_purpose::STANDARD.encode(secret);
-        accept_connection(&mut stream, &secret);
+        let protocol = req.headers.get("Sec-WebSocket-Protocol");
+        accept_connection(&mut stream, &secret, protocol);
     } else {
         send_bad_request(&mut stream);
         return;
@@ -114,11 +117,17 @@ fn main() {
                 println!("{:#x?}", &frame);
                 Frame::parse(&frame);
 
-                let payload = ['a' as u8; 65536 + 10];
-                // let payload = "hello bitch!";
+                // let payload = ['a' as u8; 65536 + 10];
+                let payload = "hello bitch!";
                 let resp_frame = Frame::new(
-                    true, false, false, false, 1, false, &payload,
-                    // payload.as_bytes(),
+                    true,
+                    false,
+                    false,
+                    false,
+                    1,
+                    false,
+                    // &payload,
+                    payload.as_bytes(),
                 );
                 let resp_bytes = resp_frame.as_bytes();
                 // println!("{:08b}", resp_bytes[0]);

@@ -119,13 +119,16 @@ pub fn send_bad_request(stream: &mut TcpStream) {
     stream.write(resp.as_slice());
 }
 
-pub fn accept_connection(stream: &mut TcpStream, secret: &String) {
+pub fn accept_connection(stream: &mut TcpStream, secret: &String, protocol: Option<&String>) {
     let mut resp = Vec::new();
     resp.push("HTTP/1.1 101 Switching Protocols\r\n".to_string());
     resp.push("Upgrade: websocket\r\n".to_string());
     resp.push("Connection: Upgrade\r\n".to_string());
     resp.push(format!("Sec-WebSocket-Accept: {secret}\r\n").to_string());
-    resp.push("Sec-WebSocket-Protocol: chat\r\n".to_string());
+    if let Some(proto) = protocol {
+        resp.push(format!("Sec-WebSocket-Protocol: {proto}\r\n"));
+    }
+
     resp.push("\r\n".to_string());
 
     let resp = resp.join("").into_bytes();
